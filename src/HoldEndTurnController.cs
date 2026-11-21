@@ -99,8 +99,10 @@ namespace FtkQuickSL
             if (uiSystemDialog.Instance != null && uiSystemDialog.Instance.gameObject.activeInHierarchy) return false;
             if (uiChatBox.Instance != null && uiChatBox.Instance.IsTextInputInFocus()) return false;
             if (EncounterSession.Instance != null && EncounterSession.Instance.m_IsInCombat) return false;
-            if (FTKUI.Instance != null && FTKUI.Instance.m_EncounterMenu != null &&
-                FTKUI.Instance.m_EncounterMenu.gameObject.activeInHierarchy)
+            if (FTKUI.Instance != null &&
+                FTKUI.Instance.m_EncounterMenu != null &&
+                FTKUI.Instance.m_EncounterMenu.m_MainPanel != null &&
+                FTKUI.Instance.m_EncounterMenu.m_MainPanel.activeInHierarchy)
                 return false;
             if (OverworldCamera.Instance == null || OverworldCamera.Instance.m_Camera == null ||
                 !OverworldCamera.Instance.m_Camera.enabled)
@@ -115,9 +117,7 @@ namespace FtkQuickSL
 
         private static bool IsPointerOverUi()
         {
-            if (FTKUI.IsMouseOverUI()) return true;
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return true;
-            return false;
+            return EventSystem.current != null && FTKUI.IsMouseOverUI();
         }
 
         private static void ExecuteEndTurn()
