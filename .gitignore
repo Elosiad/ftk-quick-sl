@@ -1,0 +1,11 @@
+dist/
+bin/
+obj/
+*.dll
+*.pdb
+*.cfg
+.vs/
+.vscode/
+*.user
+Thumbs.db
+.DS_Store
