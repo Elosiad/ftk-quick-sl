@@ -309,13 +309,44 @@ namespace FtkQuickSL
         {
             try
             {
-                if (uiOptionsMenu.Instance != null)
+                uiOptionsMenu opt = uiOptionsMenu.Instance;
+                if (opt != null)
                 {
-                    if (uiOptionsMenu.Instance.m_SaveOptions != null)
-                        uiOptionsMenu.Instance.m_SaveOptions.gameObject.SetActive(false);
-                    if (uiOptionsMenu.Instance.m_MainOptions != null)
-                        uiOptionsMenu.Instance.m_MainOptions.gameObject.SetActive(false);
-                    uiOptionsMenu.Instance.PauseGame(false);
+                    if (opt.m_SaveOptions != null && opt.m_SaveOptions.gameObject.activeInHierarchy)
+                    {
+                        if (FTKInput.Instance != null)
+                            FTKInput.Instance.Close(opt.m_SaveOptions);
+                        else
+                            opt.m_SaveOptions.OnClose();
+                    }
+
+                    if (opt.m_MainOptions != null && (opt.m_MainOptions.gameObject.activeInHierarchy || opt.m_Showing))
+                    {
+                        if (FTKInput.Instance != null)
+                            FTKInput.Instance.Close(opt.m_MainOptions);
+                        else
+                            opt.m_MainOptions.OnClose();
+                    }
+
+                    if (opt.m_Showing)
+                    {
+                        opt.PauseGame(false);
+                        opt.m_Showing = false;
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (FTKUI.Instance != null && FTKUI.Instance.m_MainCanvas != null)
+                {
+                    CanvasGroup cg = FTKUI.Instance.m_MainCanvas.GetComponent<CanvasGroup>();
+                    if (cg != null)
+                    {
+                        cg.interactable = true;
+                        cg.blocksRaycasts = true;
+                    }
                 }
             }
             catch { }
