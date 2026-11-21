@@ -151,6 +151,9 @@ namespace FtkQuickSL
         private static bool _optionsLayoutShifted;
         private static bool _saveLayoutShifted;
 
+        private static readonly List<GameObject> _hiddenMainOptionObjects = new List<GameObject>();
+        private static GameObject _hiddenMainRootObject;
+
         public static bool IsChineseLocale()
         {
             try
@@ -559,6 +562,8 @@ namespace FtkQuickSL
             if (menu == null || menu.m_MainOptions == null || menu.m_SaveGameButton == null || menu.m_ReportBugs == null)
                 return;
 
+            RestoreMainOptionsVisibility(true);
+
             Transform parent = menu.m_SaveGameButton.transform.parent;
             if (parent == null) return;
 
@@ -619,12 +624,7 @@ namespace FtkQuickSL
             uiItemIcon.SetNavigatePairUpDown(menu.m_SaveGameButton.transform, quickBtn.transform);
             uiItemIcon.SetNavigatePairUpDown(quickBtn.transform, menu.m_ReportBugs.transform);
 
-            RectTransform parentRt = parent as RectTransform;
-            if (parentRt != null && parent.GetComponent<LayoutGroup>() != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(parentRt);
-            }
-
+            RebuildLayoutHierarchy(parent, menu.m_MainOptions.transform);
             menu.m_MainOptions.UpdateSelectables();
         }
 
@@ -715,13 +715,114 @@ namespace FtkQuickSL
                 uiItemIcon.SetNavigatePairUpDown(navOrder[i], navOrder[i + 1]);
             }
 
-            RectTransform parentRt = parent as RectTransform;
-            if (parentRt != null && parent.GetComponent<LayoutGroup>() != null)
+            HideMainOptionsBehindSaveMenu(saveMenu);
+            RebuildLayoutHierarchy(parent, saveMenu.transform);
+            saveMenu.UpdateSelectables();
+        }
+
+        public static void OnOptionsSaveClosed(uiOptionsSave saveMenu)
+        {
+            bool keepShowing = uiOptionsMenu.Instance != null && uiOptionsMenu.Instance.m_Showing;
+            RestoreMainOptionsVisibility(keepShowing);
+
+            if (keepShowing && uiOptionsMenu.Instance.m_MainOptions != null)
             {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(parentRt);
+                Transform start = uiOptionsMenu.Instance.m_SaveGameButton != null
+                    ? uiOptionsMenu.Instance.m_SaveGameButton.transform.parent
+                    : uiOptionsMenu.Instance.m_MainOptions.transform;
+                RebuildLayoutHierarchy(start, uiOptionsMenu.Instance.m_MainOptions.transform);
+            }
+        }
+
+        public static void OnOptionsMainFocused(uiOptionsMain mainOptions)
+        {
+            RestoreMainOptionsVisibility(true);
+            if (mainOptions != null)
+            {
+                Transform start = uiOptionsMenu.Instance != null && uiOptionsMenu.Instance.m_SaveGameButton != null
+                    ? uiOptionsMenu.Instance.m_SaveGameButton.transform.parent
+                    : mainOptions.transform;
+                RebuildLayoutHierarchy(start, mainOptions.transform);
+            }
+        }
+
+        private static void HideMainOptionsBehindSaveMenu(uiOptionsSave saveMenu)
+        {
+            RestoreMainOptionsVisibility(false);
+
+            uiOptionsMenu optMenu = uiOptionsMenu.Instance;
+            if (optMenu == null || optMenu.m_MainOptions == null) return;
+
+            uiOptionsMain mainOpt = optMenu.m_MainOptions;
+            if (saveMenu != null && saveMenu.transform.IsChildOf(mainOpt.transform))
+                return;
+
+            bool blockerInside =
+                (mainOpt.m_Blocker != null && mainOpt.m_Blocker.transform.IsChildOf(mainOpt.transform)) ||
+                (mainOpt.m_SubBlocker != null && mainOpt.m_SubBlocker.transform.IsChildOf(mainOpt.transform));
+
+            if (blockerInside)
+            {
+                for (int i = 0; i < mainOpt.transform.childCount; i++)
+                {
+                    Transform child = mainOpt.transform.GetChild(i);
+                    if (!child.gameObject.activeSelf) continue;
+
+                    bool holdsBlocker =
+                        (mainOpt.m_Blocker != null && (mainOpt.m_Blocker.transform == child || mainOpt.m_Blocker.transform.IsChildOf(child))) ||
+                        (mainOpt.m_SubBlocker != null && (mainOpt.m_SubBlocker.transform == child || mainOpt.m_SubBlocker.transform.IsChildOf(child)));
+
+                    if (!holdsBlocker)
+                    {
+                        _hiddenMainOptionObjects.Add(child.gameObject);
+                        child.gameObject.SetActive(false);
+                    }
+                }
+            }
+            else if (mainOpt.gameObject.activeSelf)
+            {
+                _hiddenMainRootObject = mainOpt.gameObject;
+                _hiddenMainOptionObjects.Add(mainOpt.gameObject);
+                mainOpt.gameObject.SetActive(false);
+            }
+        }
+
+        private static void RestoreMainOptionsVisibility(bool restoreMainRoot)
+        {
+            for (int i = 0; i < _hiddenMainOptionObjects.Count; i++)
+            {
+                GameObject go = _hiddenMainOptionObjects[i];
+                if (go == null) continue;
+                if (!restoreMainRoot && go == _hiddenMainRootObject) continue;
+                if (!go.activeSelf)
+                {
+                    go.SetActive(true);
+                }
+            }
+            _hiddenMainOptionObjects.Clear();
+            _hiddenMainRootObject = null;
+        }
+
+        private static void RebuildLayoutHierarchy(Transform start, Transform stopAt)
+        {
+            if (start == null) return;
+            Canvas.ForceUpdateCanvases();
+
+            Transform cur = start;
+            int safety = 0;
+            while (cur != null && safety < 10)
+            {
+                RectTransform rt = cur as RectTransform;
+                if (rt != null)
+                {
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+                }
+                if (cur == stopAt) break;
+                cur = cur.parent;
+                safety++;
             }
 
-            saveMenu.UpdateSelectables();
+            Canvas.ForceUpdateCanvases();
         }
 
         private static Button CloneNativeButton(

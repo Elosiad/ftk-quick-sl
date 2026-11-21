@@ -35,6 +35,14 @@ namespace FtkQuickSL
             MethodInfo optSaveFocus = AccessTools.Method(typeof(uiOptionsSave), "OnSetFocus", Type.EmptyTypes);
             MethodInfo optSaveFocusPostfix = AccessTools.Method(typeof(HarmonyPatches), "OptionsSaveOnSetFocusPostfix");
             PatchPostfix(harmony, optSaveFocus, optSaveFocusPostfix, "uiOptionsSave.OnSetFocus");
+
+            MethodInfo optSaveClose = AccessTools.Method(typeof(uiOptionsSave), "OnClose", Type.EmptyTypes);
+            MethodInfo optSaveClosePostfix = AccessTools.Method(typeof(HarmonyPatches), "OptionsSaveOnClosePostfix");
+            PatchPostfix(harmony, optSaveClose, optSaveClosePostfix, "uiOptionsSave.OnClose");
+
+            MethodInfo optMainFocus = AccessTools.Method(typeof(uiOptionsMain), "OnSetFocus", Type.EmptyTypes);
+            MethodInfo optMainFocusPostfix = AccessTools.Method(typeof(HarmonyPatches), "OptionsMainOnSetFocusPostfix");
+            PatchPostfix(harmony, optMainFocus, optMainFocusPostfix, "uiOptionsMain.OnSetFocus");
         }
 
         private static void PatchPrefix(Harmony harmony, MethodInfo target, MethodInfo prefix, string label)
@@ -100,6 +108,30 @@ namespace FtkQuickSL
             catch (Exception ex)
             {
                 FtkQuickSLPlugin.LogSource.LogError("OptionsSaveOnSetFocusPostfix error: " + ex);
+            }
+        }
+
+        private static void OptionsSaveOnClosePostfix(uiOptionsSave __instance)
+        {
+            try
+            {
+                NativeUiInjector.OnOptionsSaveClosed(__instance);
+            }
+            catch (Exception ex)
+            {
+                FtkQuickSLPlugin.LogSource.LogError("OptionsSaveOnClosePostfix error: " + ex);
+            }
+        }
+
+        private static void OptionsMainOnSetFocusPostfix(uiOptionsMain __instance)
+        {
+            try
+            {
+                NativeUiInjector.OnOptionsMainFocused(__instance);
+            }
+            catch (Exception ex)
+            {
+                FtkQuickSLPlugin.LogSource.LogError("OptionsMainOnSetFocusPostfix error: " + ex);
             }
         }
     }

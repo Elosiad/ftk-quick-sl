@@ -14,7 +14,7 @@ namespace FtkQuickSL
     {
         public const string PluginGuid = "com.ftk.quicksl";
         public const string PluginName = "FTK Quick SL";
-        public const string PluginVersion = "1.1.2";
+        public const string PluginVersion = "1.1.3";
 
         public static FtkQuickSLPlugin Instance { get; private set; }
         public static ManualLogSource LogSource { get; private set; }
